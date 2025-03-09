@@ -99,7 +99,7 @@
             margin: 5px;
         }
         /* Modal Styles */
-        #nameModal {
+        #modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -110,22 +110,25 @@
             justify-content: center;
             align-items: center;
         }
-        #nameModalContent {
+        #modalContent {
             background: #FFF8E7;
             padding: 20px;
             border: 2px solid #A6192E;
             border-radius: 5px;
             text-align: center;
         }
-        #nameModalContent h2 {
+        #modalContent h2 {
             margin: 0 0 10px 0;
         }
-        #nameModalContent input {
+        #modalContent input {
             font-family: 'Caveat', cursive;
             font-size: 18px;
             padding: 5px;
             margin-bottom: 10px;
             width: 80%;
+        }
+        #modalContent p {
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -158,14 +161,14 @@
         <button onclick="resetGame()">Play Again</button>
     </div>
 
-    <!-- Name Entry Modal -->
-    <div id="nameModal" class="hidden">
-        <div id="nameModalContent">
-            <h2 id="nameModalTitle"></h2>
-            <input type="text" id="nameInput" placeholder="Enter name here">
-            <br>
-            <button onclick="submitName()">OK</button>
-            <button onclick="cancelName()">Cancel</button>
+    <!-- Reusable Modal -->
+    <div id="modal" class="hidden">
+        <div id="modalContent">
+            <h2 id="modalTitle"></h2>
+            <input type="text" id="nameInput" placeholder="Enter name here" class="hidden">
+            <p id="scorePrompt" class="hidden"></p>
+            <button id="modalConfirm" onclick="submitModal()">Confirm</button>
+            <button id="modalCancel" onclick="cancelModal()">Cancel</button>
         </div>
     </div>
 
@@ -173,7 +176,7 @@
         let numPlayers, currentPlayer = 0, rollsLeft = 2, dice = [0, 0, 0, 0, 0], kept = [false, false, false, false, false];
         let scores = [], playerNames = [], gameOver = false, flipMode = false, flipped = [false, false, false, false, false], flipsUsed = 0;
         const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-        let currentNameIndex = 0;
+        let currentNameIndex = 0, pendingCategory, pendingScore;
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('game').classList.add('hidden');
@@ -209,9 +212,13 @@
 
         function promptForName() {
             if (currentNameIndex < numPlayers) {
-                document.getElementById('nameModalTitle').textContent = `Enter name for Player ${currentNameIndex + 1}`;
+                document.getElementById('modalTitle').textContent = `Enter name for Player ${currentNameIndex + 1}`;
+                document.getElementById('nameInput').classList.remove('hidden');
+                document.getElementById('scorePrompt').classList.add('hidden');
                 document.getElementById('nameInput').value = '';
-                document.getElementById('nameModal').classList.remove('hidden');
+                document.getElementById('modalConfirm').onclick = submitModal;
+                document.getElementById('modalCancel').onclick = cancelModal;
+                document.getElementById('modal').classList.remove('hidden');
             } else {
                 scores = Array(numPlayers).fill().map(() => ({
                     '1s': null, '2s': null, '3s': null, '4s': null, '5s': null, '6s': null,
@@ -222,17 +229,40 @@
             }
         }
 
-        function submitName() {
+        function promptForScore(category) {
+            pendingCategory = category;
+            pendingScore = calculateScore(category);
+            document.getElementById('modalTitle').textContent = `Confirm Score for ${playerNames[currentPlayer]}`;
+            document.getElementById('nameInput').classList.add('hidden');
+            document.getElementById('scorePrompt').classList.remove('hidden');
+            document.getElementById('scorePrompt').textContent = `Score ${pendingScore} in ${category}?`;
+            document.getElementById('modalConfirm').onclick = confirmScore;
+            document.getElementById('modalCancel').onclick = cancelScore;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function submitModal() {
             let name = document.getElementById('nameInput').value.trim();
             playerNames.push(name || `Player ${currentNameIndex + 1}`);
-            document.getElementById('nameModal').classList.add('hidden');
+            document.getElementById('modal').classList.add('hidden');
             currentNameIndex++;
             promptForName();
         }
 
-        function cancelName() {
-            document.getElementById('nameModal').classList.add('hidden');
+        function cancelModal() {
+            document.getElementById('modal').classList.add('hidden');
             showSection('setup');
+        }
+
+        function confirmScore() {
+            scores[currentPlayer][pendingCategory] = pendingScore;
+            document.getElementById('modal').classList.add('hidden');
+            nextTurn();
+        }
+
+        function cancelScore() {
+            document.getElementById('modal').classList.add('hidden');
+            updateUI(); // Return to game without scoring
         }
 
         function rollDice() {
@@ -331,9 +361,7 @@
 
         function scoreTurn(category) {
             try {
-                let score = calculateScore(category);
-                scores[currentPlayer][category] = score;
-                nextTurn();
+                promptForScore(category);
             } catch (e) {
                 console.error('Error in scoreTurn:', e);
             }
