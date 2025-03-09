@@ -17,18 +17,18 @@
             flex-direction: column;
             align-items: center;
         }
-        .hidden { display: none !important; } /* High specificity */
+        .hidden { display: none !important; }
         #setup, #results {
             text-align: center;
             padding: 20px;
         }
         #game {
-            display: none; /* Default to hidden, override when shown */
+            display: none;
             width: 100%;
             max-width: 1100px;
             height: 600px;
         }
-        #game.visible { display: flex; } /* Only show when explicitly toggled */
+        #game.visible { display: flex; }
         #left-panel {
             width: 350px;
             padding: 10px;
@@ -98,13 +98,36 @@
             font-size: 18px;
             margin: 5px;
         }
+        /* Modal Styles */
+        #nameModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #nameModalContent {
+            background: #FFF8E7;
+            padding: 20px;
+            border: 2px solid #A6192E;
+            border-radius: 5px;
+            text-align: center;
+        }
+        #nameModalContent h2 {
+            margin: 0 0 10px 0;
+        }
+        #nameModalContent input {
+            font-family: 'Caveat', cursive;
+            font-size: 18px;
+            padding: 5px;
+            margin-bottom: 10px;
+            width: 80%;
+        }
     </style>
-    <!-- Inline script to hide #game immediately -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('game').classList.add('hidden');
-        });
-    </script>
 </head>
 <body>
     <div id="setup">
@@ -135,10 +158,26 @@
         <button onclick="resetGame()">Play Again</button>
     </div>
 
+    <!-- Name Entry Modal -->
+    <div id="nameModal" class="hidden">
+        <div id="nameModalContent">
+            <h2 id="nameModalTitle"></h2>
+            <input type="text" id="nameInput" placeholder="Enter name here">
+            <br>
+            <button onclick="submitName()">OK</button>
+            <button onclick="cancelName()">Cancel</button>
+        </div>
+    </div>
+
     <script>
         let numPlayers, currentPlayer = 0, rollsLeft = 2, dice = [0, 0, 0, 0, 0], kept = [false, false, false, false, false];
         let scores = [], playerNames = [], gameOver = false, flipMode = false, flipped = [false, false, false, false, false], flipsUsed = 0;
         const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        let currentNameIndex = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('game').classList.add('hidden');
+        });
 
         function showSection(sectionId) {
             document.getElementById('setup').classList.add('hidden');
@@ -160,24 +199,40 @@
                     return;
                 }
                 playerNames = [];
-                for (let i = 0; i < numPlayers; i++) {
-                    let name = prompt(`Enter name for Player ${i + 1}:`);
-                    if (name === null) {
-                        alert('Game setup canceled.');
-                        return;
-                    }
-                    playerNames.push(name.trim() || `Player ${i + 1}`);
-                }
+                currentNameIndex = 0;
+                promptForName();
+            } catch (e) {
+                console.error('Error in startGame:', e);
+                showSection('setup');
+            }
+        }
+
+        function promptForName() {
+            if (currentNameIndex < numPlayers) {
+                document.getElementById('nameModalTitle').textContent = `Enter name for Player ${currentNameIndex + 1}`;
+                document.getElementById('nameInput').value = '';
+                document.getElementById('nameModal').classList.remove('hidden');
+            } else {
                 scores = Array(numPlayers).fill().map(() => ({
                     '1s': null, '2s': null, '3s': null, '4s': null, '5s': null, '6s': null,
                     'straight': null, 'full': null, 'quadro': null, 'quina': null, 'chance': null
                 }));
                 showSection('game');
                 updateUI();
-            } catch (e) {
-                console.error('Error in startGame:', e);
-                showSection('setup'); // Back to setup on error
             }
+        }
+
+        function submitName() {
+            let name = document.getElementById('nameInput').value.trim();
+            playerNames.push(name || `Player ${currentNameIndex + 1}`);
+            document.getElementById('nameModal').classList.add('hidden');
+            currentNameIndex++;
+            promptForName();
+        }
+
+        function cancelName() {
+            document.getElementById('nameModal').classList.add('hidden');
+            showSection('setup');
         }
 
         function rollDice() {
