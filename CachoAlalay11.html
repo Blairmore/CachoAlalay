@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cacho Alalay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Caveat', cursive;
+            margin: 0;
+            padding: 10px;
+            background-color: #F5E8C7;
+            color: #4A2C2A;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .hidden { display: none; }
+        #setup, #results {
+            text-align: center;
+            padding: 20px;
+        }
+        #game {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            height: 600px;
+        }
+        #left-panel {
+            width: 350px;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Changed from center to top-justify */
+        }
+        #right-panel {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            max-height: 580px;
+        }
+        #dice {
+            margin: 10px 0;
+            font-size: 32px;
+        }
+        .die {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px;
+            border: 2px solid #A6192E;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            text-align: center;
+            background-color: #FFF8E7;
+        }
+        .kept { background-color: #A9C47F; }
+        .flipped { background-color: #F28C82; }
+        button {
+            padding: 4px 8px;
+            margin: 2px;
+            font-family: 'Caveat', cursive;
+            font-size: 16px;
+            background-color: #00A79D;
+            color: #FFF8E7;
+            border: 1px solid #A6192E;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #008C83; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+        }
+        th, td {
+            border: 1px dashed #A6192E;
+            padding: 4px 6px;
+            min-width: 40px;
+            text-align: center;
+        }
+        th {
+            background-color: #DED1A3;
+            color: #4A2C2A;
+        }
+        td { background-color: #FFF8E7; }
+        .current-player { border: 2px solid #A6192E; }
+        #flipMessage { color: #4A2C2A; margin: 5px 0; }
+        h1, h2, h3 { color: #A6192E; margin: 5px 0; }
+        #setup input {
+            font-family: 'Caveat', cursive;
+            font-size: 18px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="setup">
+        <h1>Cacho Alalay</h1>
+        <label>Number of Players (2-6): </label>
+        <input type="number" id="numPlayers" min="2" max="6" value="2">
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="game" class="hidden">
+        <div id="left-panel">
+            <h2><span id="currentPlayer"></span>'s Turn</h2>
+            <div id="dice"></div>
+            <p>Rolls Left: <span id="rollsLeft">2</span></p>
+            <p id="flipMessage" class="hidden">Click up to 2 dice to flip, then confirm.</p>
+            <button onclick="rollDice()">Roll Dice</button>
+            <button onclick="confirmFlips()" id="confirmFlipsBtn" class="hidden">Confirm Flips</button>
+        </div>
+        <div id="right-panel">
+            <h3>Scorecard</h3>
+            <table id="scoreTable"></table>
+        </div>
+    </div>
+
+    <div id="results" class="hidden">
+        <h1>Game Over!</h1>
+        <table id="finalScores"></table>
+        <button onclick="resetGame()">Play Again</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, setup should be visible');
+        });
+
+        let numPlayers, currentPlayer = 0, rollsLeft = 2, dice = [0, 0, 0, 0, 0], kept = [false, false, false, false, false];
+        let scores = [], playerNames = [], gameOver = false, flipMode = false, flipped = [false, false, false, false, false], flipsUsed = 0;
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+        function startGame() {
+            try {
+                numPlayers = parseInt(document.getElementById('numPlayers').value);
+                if (numPlayers < 2 || numPlayers > 6) {
+                    alert('Please enter 2-6 players.');
+                    return;
+                }
+                playerNames = [];
+                for (let i = 0; i < numPlayers; i++) {
+                    let name = prompt(`Enter name for Player ${i + 1}:`) || `Player ${i + 1}`;
+                    playerNames.push(name.trim());
+                }
+                scores = Array(numPlayers).fill().map(() => ({
+                    '1s': null, '2s': null, '3s': null, '4s': null, '5s': null, '6s': null,
+                    'straight': null, 'full': null, 'quadro': null, 'quina': null, 'chance': null
+                }));
+                document.getElementById('setup').classList.add('hidden');
+                document.getElementById('game').classList.remove('hidden');
+                updateUI();
+            } catch (e) {
+                console.error('Error in startGame:', e);
+            }
+        }
+
+        function rollDice() {
+            try {
+                if (rollsLeft <= 0) return;
+                for (let i = 0; i < 5; i++) {
+                    if (!kept[i]) dice[i] = Math.floor(Math.random() * 6) + 1;
+                }
+                rollsLeft--;
+                if (rollsLeft === 0) {
+                    flipMode = true;
+                    document.getElementById('flipMessage').classList.remove('hidden');
+                    document.getElementById('flipMessage').textContent = 'Click up to 2 dice to flip, then confirm.';
+                    document.getElementById('confirmFlipsBtn').classList.remove('hidden');
+                }
+                updateUI();
+            } catch (e) {
+                console.error('Error in rollDice:', e);
+            }
+        }
+
+        function toggleKeepOrFlip(index) {
+            if (rollsLeft === 2 || (!flipMode && rollsLeft === 0)) return;
+            if (flipMode) {
+                if (flipsUsed < 2 || flipped[index]) {
+                    dice[index] = 7 - dice[index];
+                    flipped[index] = !flipped[index];
+                    flipsUsed = flipped.filter(f => f).length;
+                }
+            } else {
+                kept[index] = !kept[index];
+            }
+            updateUI();
+        }
+
+        function confirmFlips() {
+            flipMode = false;
+            document.getElementById('flipMessage').classList.add('hidden');
+            document.getElementById('confirmFlipsBtn').classList.add('hidden');
+            updateUI();
+        }
+
+        function updateUI() {
+            try {
+                document.getElementById('currentPlayer').textContent = playerNames[currentPlayer];
+                document.getElementById('rollsLeft').textContent = rollsLeft;
+                let diceDiv = document.getElementById('dice');
+                diceDiv.innerHTML = '';
+                dice.forEach((val, i) => {
+                    let die = document.createElement('span');
+                    die.className = 'die' + (kept[i] ? ' kept' : '') + (flipped[i] ? ' flipped' : '');
+                    die.textContent = val ? diceFaces[val - 1] : '-';
+                    die.onclick = () => toggleKeepOrFlip(i);
+                    diceDiv.appendChild(die);
+                });
+                updateScoreTable();
+            } catch (e) {
+                console.error('Error in updateUI:', e);
+            }
+        }
+
+        function updateScoreTable() {
+            try {
+                let table = document.getElementById('scoreTable');
+                table.innerHTML = '';
+                const categories = ['1s', '2s', '3s', '4s', '5s', '6s', 'straight', 'full', 'quadro', 'quina', 'chance'];
+                
+                let header = document.createElement('tr');
+                header.innerHTML = '<th></th>';
+                playerNames.forEach((name, i) => {
+                    let th = document.createElement('th');
+                    th.textContent = name;
+                    if (i === currentPlayer) th.classList.add('current-player');
+                    header.appendChild(th);
+                });
+                table.appendChild(header);
+
+                categories.forEach(cat => {
+                    let row = document.createElement('tr');
+                    row.innerHTML = `<td>${cat}</td>`;
+                    scores.forEach((player, i) => {
+                        let td = document.createElement('td');
+                        td.textContent = player[cat] === null ? '-' : player[cat];
+                        if (i === currentPlayer && player[cat] === null && rollsLeft < 2 && !flipMode) {
+                            td.style.cursor = 'pointer';
+                            td.onclick = () => scoreTurn(cat);
+                        }
+                        row.appendChild(td);
+                    });
+                    table.appendChild(row);
+                });
+            } catch (e) {
+                console.error('Error in updateScoreTable:', e);
+            }
+        }
+
+        function scoreTurn(category) {
+            try {
+                let score = calculateScore(category);
+                scores[currentPlayer][category] = score;
+                nextTurn();
+            } catch (e) {
+                console.error('Error in scoreTurn:', e);
+            }
+        }
+
+        function calculateScore(category) {
+            let counts = Array(7).fill(0);
+            dice.forEach(d => counts[d]++);
+            switch (category) {
+                case '1s': return counts[1];
+                case '2s': return counts[2] * 2;
+                case '3s': return counts[3] * 3;
+                case '4s': return counts[4] * 4;
+                case '5s': return counts[5] * 5;
+                case '6s': return counts[6] * 6;
+                case 'straight': return (dice.slice().sort((a, b) => a - b).join('') === '12345' || dice.join('') === '23456') ? 25 : 0;
+                case 'full': return counts.some(c => c === 3) && counts.some(c => c === 2) ? 30 : 0;
+                case 'quadro': return counts.some(c => c >= 4) ? dice.reduce((a, b) => a + b) : 0;
+                case 'quina': return counts.some(c => c === 5) ? 50 : 0;
+                case 'chance': return dice.reduce((a, b) => a + b);
+                default: return 0;
+            }
+        }
+
+        function nextTurn() {
+            try {
+                currentPlayer = (currentPlayer + 1) % numPlayers;
+                rollsLeft = 2;
+                dice = [0, 0, 0, 0, 0];
+                kept = [false, false, false, false, false];
+                flipped = [false, false, false, false, false];
+                flipsUsed = 0;
+                flipMode = false;
+                document.getElementById('flipMessage').classList.add('hidden');
+                document.getElementById('confirmFlipsBtn').classList.add('hidden');
+                if (scores.every(p => Object.values(p).every(v => v !== null))) showResults();
+                else updateUI();
+            } catch (e) {
+                console.error('Error in nextTurn:', e);
+            }
+        }
+
+        function showResults() {
+            try {
+                document.getElementById('game').classList.add('hidden');
+                document.getElementById('results').classList.remove('hidden');
+                let table = document.getElementById('finalScores');
+                table.innerHTML = '<tr><th>Player</th><th>Total Score</th></tr>';
+                scores.forEach((player, i) => {
+                    let total = Object.values(player).reduce((a, b) => a + b, 0);
+                    table.innerHTML += `<tr><td>${playerNames[i]}</td><td>${total}</td></tr>`;
+                });
+            } catch (e) {
+                console.error('Error in showResults:', e);
+            }
+        }
+
+        function resetGame() {
+            try {
+                document.getElementById('results').classList.add('hidden');
+                document.getElementById('setup').classList.remove('hidden');
+                currentPlayer = 0;
+                rollsLeft = 2;
+                dice = [0, 0, 0, 0, 0];
+                kept = [false, false, false, false, false];
+                flipped = [false, false, false, false, false];
+                flipsUsed = 0;
+                scores = [];
+                playerNames = [];
+            } catch (e) {
+                console.error('Error in resetGame:', e);
+            }
+        }
+    </script>
+</body>
+</html>
