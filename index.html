@@ -17,24 +17,25 @@
             flex-direction: column;
             align-items: center;
         }
-        .hidden { display: none; }
+        .hidden { display: none !important; } /* High specificity */
         #setup, #results {
             text-align: center;
             padding: 20px;
         }
         #game {
-            display: flex;
+            display: none; /* Default to hidden, override when shown */
             width: 100%;
             max-width: 1100px;
             height: 600px;
         }
+        #game.visible { display: flex; } /* Only show when explicitly toggled */
         #left-panel {
             width: 350px;
             padding: 10px;
             text-align: center;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* Changed from center to top-justify */
+            justify-content: flex-start;
         }
         #right-panel {
             flex: 1;
@@ -98,6 +99,12 @@
             margin: 5px;
         }
     </style>
+    <!-- Inline script to hide #game immediately -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('game').classList.add('hidden');
+        });
+    </script>
 </head>
 <body>
     <div id="setup">
@@ -107,7 +114,7 @@
         <button onclick="startGame()">Start Game</button>
     </div>
 
-    <div id="game" class="hidden">
+    <div id="game">
         <div id="left-panel">
             <h2><span id="currentPlayer"></span>'s Turn</h2>
             <div id="dice"></div>
@@ -129,35 +136,47 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, setup should be visible');
-        });
-
         let numPlayers, currentPlayer = 0, rollsLeft = 2, dice = [0, 0, 0, 0, 0], kept = [false, false, false, false, false];
         let scores = [], playerNames = [], gameOver = false, flipMode = false, flipped = [false, false, false, false, false], flipsUsed = 0;
         const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
+        function showSection(sectionId) {
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('game').classList.add('hidden');
+            document.getElementById('results').classList.add('hidden');
+            if (sectionId === 'game') {
+                document.getElementById('game').classList.remove('hidden');
+                document.getElementById('game').classList.add('visible');
+            } else {
+                document.getElementById(sectionId).classList.remove('hidden');
+            }
+        }
+
         function startGame() {
             try {
                 numPlayers = parseInt(document.getElementById('numPlayers').value);
-                if (numPlayers < 2 || numPlayers > 6) {
-                    alert('Please enter 2-6 players.');
+                if (isNaN(numPlayers) || numPlayers < 2 || numPlayers > 6) {
+                    alert('Please enter a number between 2 and 6.');
                     return;
                 }
                 playerNames = [];
                 for (let i = 0; i < numPlayers; i++) {
-                    let name = prompt(`Enter name for Player ${i + 1}:`) || `Player ${i + 1}`;
-                    playerNames.push(name.trim());
+                    let name = prompt(`Enter name for Player ${i + 1}:`);
+                    if (name === null) {
+                        alert('Game setup canceled.');
+                        return;
+                    }
+                    playerNames.push(name.trim() || `Player ${i + 1}`);
                 }
                 scores = Array(numPlayers).fill().map(() => ({
                     '1s': null, '2s': null, '3s': null, '4s': null, '5s': null, '6s': null,
                     'straight': null, 'full': null, 'quadro': null, 'quina': null, 'chance': null
                 }));
-                document.getElementById('setup').classList.add('hidden');
-                document.getElementById('game').classList.remove('hidden');
+                showSection('game');
                 updateUI();
             } catch (e) {
                 console.error('Error in startGame:', e);
+                showSection('setup'); // Back to setup on error
             }
         }
 
@@ -304,8 +323,7 @@
 
         function showResults() {
             try {
-                document.getElementById('game').classList.add('hidden');
-                document.getElementById('results').classList.remove('hidden');
+                showSection('results');
                 let table = document.getElementById('finalScores');
                 table.innerHTML = '<tr><th>Player</th><th>Total Score</th></tr>';
                 scores.forEach((player, i) => {
@@ -319,8 +337,7 @@
 
         function resetGame() {
             try {
-                document.getElementById('results').classList.add('hidden');
-                document.getElementById('setup').classList.remove('hidden');
+                showSection('setup');
                 currentPlayer = 0;
                 rollsLeft = 2;
                 dice = [0, 0, 0, 0, 0];
