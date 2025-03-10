@@ -178,6 +178,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('game').classList.add('hidden');
+            console.log('DOM loaded, game hidden');
         });
 
         function showSection(sectionId) {
@@ -193,8 +194,10 @@
         }
 
         function startGame() {
+            console.log('startGame clicked'); // Debug log
             try {
                 numPlayers = parseInt(document.getElementById('numPlayers').value);
+                console.log('numPlayers:', numPlayers); // Debug log
                 if (isNaN(numPlayers) || numPlayers < 2 || numPlayers > 6) {
                     alert('Please enter a number between 2 and 6.');
                     return;
@@ -209,6 +212,7 @@
         }
 
         function promptForName() {
+            console.log('promptForName called, index:', currentNameIndex); // Debug log
             if (currentNameIndex < numPlayers) {
                 document.getElementById('modalTitle').textContent = `Enter name for Player ${currentNameIndex + 1}`;
                 document.getElementById('nameInput').classList.remove('hidden');
