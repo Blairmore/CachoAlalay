@@ -98,7 +98,6 @@
             font-size: 18px;
             margin: 5px;
         }
-        /* Modal Styles */
         #modal {
             position: fixed;
             top: 0;
@@ -161,7 +160,6 @@
         <button onclick="resetGame()">Play Again</button>
     </div>
 
-    <!-- Reusable Modal -->
     <div id="modal" class="hidden">
         <div id="modalContent">
             <h2 id="modalTitle"></h2>
@@ -262,7 +260,7 @@
 
         function cancelScore() {
             document.getElementById('modal').classList.add('hidden');
-            updateUI(); // Return to game without scoring
+            updateUI();
         }
 
         function rollDice() {
@@ -367,24 +365,25 @@
             }
         }
 
-    function calculateScore(category) {
-    let counts = Array(7).fill(0);
-    dice.forEach(d => counts[d]++);
-    const sortedDice = dice.slice().sort((a, b) => a - b).join('');
-    switch (category) {
-        case '1s': return counts[1];
-        case '2s': return counts[2] * 2;
-        case '3s': return counts[3] * 3;
-        case '4s': return counts[4] * 4;
-        case '5s': return counts[5] * 5;
-        case '6s': return counts[6] * 6;
-        case 'straight': return (sortedDice === '12345' || sortedDice === '23456') ? 25 : 0;
-        case 'full': return counts.some(c => c === 3) && counts.some(c => c === 2) ? 30 : 0;
-        case 'quadro': return counts.some(c => c >= 4) ? dice.reduce((a, b) => a + b) : 0;
-        case 'quina': return counts.some(c => c === 5) ? 50 : 0;
-        case 'chance': return dice.reduce((a, b) => a + b);
-        default: return 0;
-    }
+        function calculateScore(category) {
+            let counts = Array(7).fill(0);
+            dice.forEach(d => counts[d]++);
+            const sortedDice = dice.slice().sort((a, b) => a - b).join('');
+            switch (category) {
+                case '1s': return counts[1];
+                case '2s': return counts[2] * 2;
+                case '3s': return counts[3] * 3;
+                case '4s': return counts[4] * 4;
+                case '5s': return counts[5] * 5;
+                case '6s': return counts[6] * 6;
+                case 'straight': return (sortedDice === '12345' || sortedDice === '23456') ? 25 : 0;
+                case 'full': return counts.some(c => c === 3) && counts.some(c => c === 2) ? 30 : 0;
+                case 'quadro': return counts.some(c => c >= 4) ? dice.reduce((a, b) => a + b) : 0;
+                case 'quina': return counts.some(c => c === 5) ? 50 : 0;
+                case 'chance': return dice.reduce((a, b) => a + b);
+                default: return 0;
+            }
+        }
 
         function nextTurn() {
             try {
