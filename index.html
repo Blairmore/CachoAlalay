@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,18 +18,28 @@
             flex-direction: column;
             align-items: center;
         }
-        .hidden { display: none !important; }
-        #setup, #results {
+
+        .hidden {
+            display: none !important;
+        }
+
+        #setup,
+        #results {
             text-align: center;
             padding: 20px;
         }
+
         #game {
             display: none;
             width: 100%;
             max-width: 1100px;
             height: 600px;
         }
-        #game.visible { display: flex; }
+
+        #game.visible {
+            display: flex;
+        }
+
         #left-panel {
             width: 350px;
             padding: 10px;
@@ -37,16 +48,19 @@
             flex-direction: column;
             justify-content: flex-start;
         }
+
         #right-panel {
             flex: 1;
             padding: 10px;
             overflow-y: auto;
             max-height: 580px;
         }
+
         #dice {
             margin: 10px 0;
             font-size: 32px;
         }
+
         .die {
             display: inline-block;
             margin: 5px;
@@ -60,8 +74,15 @@
             text-align: center;
             background-color: #FFF8E7;
         }
-        .kept { background-color: #A9C47F; }
-        .flipped { background-color: #F28C82; }
+
+        .kept {
+            background-color: #A9C47F;
+        }
+
+        .flipped {
+            background-color: #F28C82;
+        }
+
         button {
             padding: 4px 8px;
             margin: 2px;
@@ -73,31 +94,63 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        button:hover { background-color: #008C83; }
+
+        button:hover {
+            background-color: #008C83;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            border-color: #999;
+            color: #666;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 16px;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px dashed #A6192E;
             padding: 4px 6px;
             min-width: 40px;
             text-align: center;
         }
+
         th {
             background-color: #DED1A3;
             color: #4A2C2A;
         }
-        td { background-color: #FFF8E7; }
-        .current-player { border: 2px solid #A6192E; }
-        #flipMessage { color: #4A2C2A; margin: 5px 0; }
-        h1, h2, h3 { color: #A6192E; margin: 5px 0; }
+
+        td {
+            background-color: #FFF8E7;
+        }
+
+        .current-player {
+            border: 2px solid #A6192E;
+        }
+
+        #flipMessage {
+            color: #4A2C2A;
+            margin: 5px 0;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #A6192E;
+            margin: 5px 0;
+        }
+
         #setup input {
             font-family: 'Caveat', cursive;
             font-size: 18px;
             margin: 5px;
         }
+
         #modal {
             position: fixed;
             top: 0;
@@ -109,6 +162,7 @@
             justify-content: center;
             align-items: center;
         }
+
         #modalContent {
             background: #FFF8E7;
             padding: 20px;
@@ -116,9 +170,11 @@
             border-radius: 5px;
             text-align: center;
         }
+
         #modalContent h2 {
             margin: 0 0 10px 0;
         }
+
         #modalContent input {
             font-family: 'Caveat', cursive;
             font-size: 18px;
@@ -126,11 +182,25 @@
             margin-bottom: 10px;
             width: 80%;
         }
+
         #modalContent p {
             margin: 10px 0;
         }
+
+        .status-message {
+            background-color: #FFF8E7;
+            border: 2px solid #A6192E;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 1.2em;
+            color: #A6192E;
+            font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
+
 <body>
     <div id="setup">
         <h1>Cacho Alalay</h1>
@@ -142,10 +212,11 @@
     <div id="game">
         <div id="left-panel">
             <h2><span id="currentPlayer"></span>'s Turn</h2>
+            <div id="gameStatus" class="status-message">Welcome! Roll the dice to start.</div>
             <div id="dice"></div>
             <p>Rolls Left: <span id="rollsLeft">2</span></p>
             <p id="flipMessage" class="hidden">Click up to 2 dice to flip, then confirm.</p>
-            <button onclick="rollDice()">Roll Dice</button>
+            <button id="rollBtn" onclick="rollDice()">Roll Dice</button>
             <button onclick="confirmFlips()" id="confirmFlipsBtn" class="hidden">Confirm Flips</button>
         </div>
         <div id="right-panel">
@@ -228,6 +299,7 @@
                 }));
                 showSection('game');
                 updateUI();
+                updateGameStatus();
             }
         }
 
@@ -281,6 +353,7 @@
                     document.getElementById('confirmFlipsBtn').classList.remove('hidden');
                 }
                 updateUI();
+                updateGameStatus();
             } catch (e) {
                 console.error('Error in rollDice:', e);
             }
@@ -298,6 +371,7 @@
                 kept[index] = !kept[index];
             }
             updateUI();
+            updateGameStatus();
         }
 
         function confirmFlips() {
@@ -305,12 +379,30 @@
             document.getElementById('flipMessage').classList.add('hidden');
             document.getElementById('confirmFlipsBtn').classList.add('hidden');
             updateUI();
+            updateGameStatus();
+        }
+
+        function updateGameStatus() {
+            const statusEl = document.getElementById('gameStatus');
+            const currentPlayerName = playerNames[currentPlayer];
+
+            if (rollsLeft === 2 && dice[0] === 0) {
+                statusEl.textContent = "Roll the dice to begin!";
+            } else if (flipMode) {
+                statusEl.textContent = "No rolls left! You may flip up to 2 dice (click them), then confirm.";
+            } else if (rollsLeft === 0) {
+                statusEl.textContent = "Choose a category on the scorecard to finish your turn.";
+            } else {
+                statusEl.textContent = "Select dice to keep for the next roll, or choose a category to score.";
+            }
         }
 
         function updateUI() {
             try {
                 document.getElementById('currentPlayer').textContent = playerNames[currentPlayer];
                 document.getElementById('rollsLeft').textContent = rollsLeft;
+                document.getElementById('rollBtn').disabled = (rollsLeft <= 0);
+                // updateGameStatus(); // Called explicitly where needed to avoid circular dependencies if any, or just keep distinct
                 let diceDiv = document.getElementById('dice');
                 diceDiv.innerHTML = '';
                 dice.forEach((val, i) => {
@@ -331,7 +423,7 @@
                 let table = document.getElementById('scoreTable');
                 table.innerHTML = '';
                 const categories = ['1s', '2s', '3s', '4s', '5s', '6s', 'straight', 'full', 'quadro', 'quina', 'chance'];
-                
+
                 let header = document.createElement('tr');
                 header.innerHTML = '<th></th>';
                 playerNames.forEach((name, i) => {
@@ -401,7 +493,10 @@
                 document.getElementById('flipMessage').classList.add('hidden');
                 document.getElementById('confirmFlipsBtn').classList.add('hidden');
                 if (scores.every(p => Object.values(p).every(v => v !== null))) showResults();
-                else updateUI();
+                else {
+                    updateUI();
+                    updateGameStatus();
+                }
             } catch (e) {
                 console.error('Error in nextTurn:', e);
             }
@@ -438,4 +533,5 @@
         }
     </script>
 </body>
+
 </html>
