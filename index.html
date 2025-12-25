@@ -215,9 +215,8 @@
             <div id="gameStatus" class="status-message">Welcome! Roll the dice to start.</div>
             <div id="dice"></div>
             <p>Rolls Left: <span id="rollsLeft">2</span></p>
-            <p id="flipMessage" class="hidden">Click up to 2 dice to flip, then confirm.</p>
+            <p id="flipMessage" class="hidden">Click up to 2 dice to flip.</p>
             <button id="rollBtn" onclick="rollDice()">Roll Dice</button>
-            <button onclick="confirmFlips()" id="confirmFlipsBtn" class="hidden">Confirm Flips</button>
         </div>
         <div id="right-panel">
             <h3>Scorecard</h3>
@@ -349,8 +348,7 @@
                 if (rollsLeft === 0) {
                     flipMode = true;
                     document.getElementById('flipMessage').classList.remove('hidden');
-                    document.getElementById('flipMessage').textContent = 'Click up to 2 dice to flip, then confirm.';
-                    document.getElementById('confirmFlipsBtn').classList.remove('hidden');
+                    document.getElementById('flipMessage').textContent = 'Click up to 2 dice to flip, then choose a category.';
                 }
                 updateUI();
                 updateGameStatus();
@@ -374,14 +372,6 @@
             updateGameStatus();
         }
 
-        function confirmFlips() {
-            flipMode = false;
-            document.getElementById('flipMessage').classList.add('hidden');
-            document.getElementById('confirmFlipsBtn').classList.add('hidden');
-            updateUI();
-            updateGameStatus();
-        }
-
         function updateGameStatus() {
             const statusEl = document.getElementById('gameStatus');
             const currentPlayerName = playerNames[currentPlayer];
@@ -389,7 +379,7 @@
             if (rollsLeft === 2 && dice[0] === 0) {
                 statusEl.textContent = "Roll the dice to begin!";
             } else if (flipMode) {
-                statusEl.textContent = "No rolls left! You may flip up to 2 dice (click them), then confirm.";
+                statusEl.textContent = "No rolls left! You may flip up to 2 dice (click them), then choose a category to score.";
             } else if (rollsLeft === 0) {
                 statusEl.textContent = "Choose a category on the scorecard to finish your turn.";
             } else {
@@ -440,7 +430,7 @@
                     scores.forEach((player, i) => {
                         let td = document.createElement('td');
                         td.textContent = player[cat] === null ? '-' : player[cat];
-                        if (i === currentPlayer && player[cat] === null && rollsLeft < 2 && !flipMode) {
+                        if (i === currentPlayer && player[cat] === null && rollsLeft < 2) {
                             td.style.cursor = 'pointer';
                             td.onclick = () => scoreTurn(cat);
                         }
@@ -491,7 +481,7 @@
                 flipsUsed = 0;
                 flipMode = false;
                 document.getElementById('flipMessage').classList.add('hidden');
-                document.getElementById('confirmFlipsBtn').classList.add('hidden');
+                // confirmFlipsBtn removed
                 if (scores.every(p => Object.values(p).every(v => v !== null))) showResults();
                 else {
                     updateUI();
