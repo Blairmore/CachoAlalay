@@ -151,7 +151,8 @@
             margin: 5px;
         }
 
-        #modal {
+        #modal,
+        #rulesModal {
             position: fixed;
             top: 0;
             left: 0;
@@ -241,6 +242,23 @@
         </div>
     </div>
 
+    <div id="rulesModal" class="hidden">
+        <div id="modalContent" style="text-align: left; max-width: 500px;">
+            <h2 style="text-align: center;">Scoring Rules</h2>
+            <ul style="list-style-type: none; padding: 0;">
+                <li><strong>1s - 6s:</strong> Sum of matching dice (e.g., three 4s = 12)</li>
+                <li><strong>Straight (Escalera):</strong> 1-2-3-4-5 or 2-3-4-5-6 (25 pts, 20 if not immediate)</li>
+                <li><strong>Full House:</strong> 3 of one kind + 2 of another (30 pts, 25 if not immediate)</li>
+                <li><strong>Quadro (Poker):</strong> 4 of a kind (40 pts or 45) - *Simplified: Any 4-kind*</li>
+                <li><strong>Quina (Grande):</strong> 5 of a kind (50 pts)</li>
+                <li><strong>Chance:</strong> Sum of any 5 dice</li>
+            </ul>
+            <div style="text-align: center;">
+                <button onclick="closeRules()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let numPlayers, currentPlayer = 0, rollsLeft = 2, dice = [0, 0, 0, 0, 0], kept = [false, false, false, false, false];
         let scores = [], playerNames = [], gameOver = false, flipMode = false, flipped = [false, false, false, false, false], flipsUsed = 0;
@@ -248,9 +266,30 @@
         let currentNameIndex = 0, pendingCategory, pendingScore;
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Add help button next to scorecard title if not exists
+            const scorecardHeader = document.querySelector('#right-panel h3');
+            if (scorecardHeader && !document.getElementById('helpBtn')) {
+                const helpBtn = document.createElement('span');
+                helpBtn.id = 'helpBtn';
+                helpBtn.innerHTML = ' ❓';
+                helpBtn.style.cursor = 'pointer';
+                helpBtn.onclick = openRules;
+                scorecardHeader.appendChild(helpBtn);
+            }
+
             document.getElementById('game').classList.add('hidden');
             console.log('DOM loaded, game hidden');
         });
+
+        function openRules() {
+            document.getElementById('rulesModal').classList.remove('hidden');
+            document.getElementById('rulesModal').style.display = 'flex'; // Ensure flex centering
+        }
+
+        function closeRules() {
+            document.getElementById('rulesModal').classList.add('hidden');
+            document.getElementById('rulesModal').style.display = ''; // Reset
+        }
 
         function showSection(sectionId) {
             document.getElementById('setup').classList.add('hidden');
