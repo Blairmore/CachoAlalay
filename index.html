@@ -217,6 +217,7 @@
             <p>Rolls Left: <span id="rollsLeft">2</span></p>
             <p id="flipMessage" class="hidden">Click up to 2 dice to flip.</p>
             <button id="rollBtn" onclick="rollDice()">Roll Dice</button>
+            <button id="flipBtn" onclick="enterFlipMode()" class="hidden">Flip Dice</button>
         </div>
         <div id="right-panel">
             <h3>Scorecard</h3>
@@ -346,14 +347,25 @@
                 }
                 rollsLeft--;
                 if (rollsLeft === 0) {
-                    flipMode = true;
-                    document.getElementById('flipMessage').classList.remove('hidden');
-                    document.getElementById('flipMessage').textContent = 'Click up to 2 dice to flip, then choose a category.';
+                    enterFlipMode();
                 }
                 updateUI();
                 updateGameStatus();
             } catch (e) {
                 console.error('Error in rollDice:', e);
+            }
+        }
+
+        function enterFlipMode() {
+            try {
+                rollsLeft = 0;
+                flipMode = true;
+                document.getElementById('flipMessage').classList.remove('hidden');
+                document.getElementById('flipMessage').textContent = 'Click up to 2 dice to flip, then choose a category.';
+                updateUI();
+                updateGameStatus();
+            } catch (e) {
+                console.error('Error in enterFlipMode:', e);
             }
         }
 
@@ -383,7 +395,7 @@
             } else if (rollsLeft === 0) {
                 statusEl.textContent = "Choose a category on the scorecard to finish your turn.";
             } else {
-                statusEl.textContent = "Select dice to keep for the next roll, or choose a category to score.";
+                statusEl.textContent = "Select dice to keep for the next roll, or flip remaining dice / choose a category to score.";
             }
         }
 
@@ -392,7 +404,16 @@
                 document.getElementById('currentPlayer').textContent = playerNames[currentPlayer];
                 document.getElementById('rollsLeft').textContent = rollsLeft;
                 document.getElementById('rollBtn').disabled = (rollsLeft <= 0);
-                // updateGameStatus(); // Called explicitly where needed to avoid circular dependencies if any, or just keep distinct
+
+                // Show Flip Button if rolled at least once and not yet in flip mode
+                let canFlip = (dice[0] !== 0 && !flipMode);
+                let flipBtn = document.getElementById('flipBtn');
+                if (canFlip) {
+                    flipBtn.classList.remove('hidden');
+                } else {
+                    flipBtn.classList.add('hidden');
+                }
+
                 let diceDiv = document.getElementById('dice');
                 diceDiv.innerHTML = '';
                 dice.forEach((val, i) => {
@@ -430,7 +451,7 @@
                     scores.forEach((player, i) => {
                         let td = document.createElement('td');
                         td.textContent = player[cat] === null ? '-' : player[cat];
-                        if (i === currentPlayer && player[cat] === null && rollsLeft < 2) {
+                        if (i === currentPlayer && player[cat] === null && dice[0] !== 0) {
                             td.style.cursor = 'pointer';
                             td.onclick = () => scoreTurn(cat);
                         }
