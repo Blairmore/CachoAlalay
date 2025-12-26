@@ -515,6 +515,11 @@
             let counts = Array(7).fill(0);
             dice.forEach(d => counts[d]++);
             const sortedDice = dice.slice().sort((a, b) => a - b).join('');
+
+            // "De Mano" check: Valid if only 1 roll used (rollsLeft === 1) and no flips used
+            // Note: rollsLeft starts at 2. After 1 roll, it is 1.
+            const isHand = (rollsLeft === 1 && !flipMode);
+
             switch (category) {
                 case '1s': return counts[1];
                 case '2s': return counts[2] * 2;
@@ -522,10 +527,14 @@
                 case '4s': return counts[4] * 4;
                 case '5s': return counts[5] * 5;
                 case '6s': return counts[6] * 6;
-                case 'straight': return (sortedDice === '12345' || sortedDice === '23456') ? 25 : 0;
-                case 'full': return counts.some(c => c === 3) && counts.some(c => c === 2) ? 30 : 0;
-                case 'quadro': return counts.some(c => c >= 4) ? dice.reduce((a, b) => a + b) : 0;
-                case 'quina': return counts.some(c => c === 5) ? 50 : 0;
+                case 'straight':
+                    return (sortedDice === '12345' || sortedDice === '23456') ? (isHand ? 25 : 20) : 0;
+                case 'full':
+                    return (counts.some(c => c === 3) && counts.some(c => c === 2)) ? (isHand ? 30 : 25) : 0;
+                case 'quadro':
+                    return (counts.some(c => c >= 4)) ? (isHand ? 45 : 40) : 0; // Updated: 45 for hand, 40 otherwise
+                case 'quina':
+                    return (counts.some(c => c === 5)) ? 50 : 0;
                 case 'chance': return dice.reduce((a, b) => a + b);
                 default: return 0;
             }
