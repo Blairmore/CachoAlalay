@@ -84,10 +84,10 @@
         }
 
         button {
-            padding: 4px 8px;
+            padding: 6px 12px;
             margin: 2px;
             font-family: 'Caveat', cursive;
-            font-size: 16px;
+            font-size: 24px;
             background-color: #00A79D;
             color: #FFF8E7;
             border: 1px solid #A6192E;
@@ -97,6 +97,16 @@
 
         button:hover {
             background-color: #008C83;
+        }
+
+        #flipBtn {
+            background-color: #E67E22;
+            /* margin-left: 20px; Removed in favor of flex gap */
+            border-color: #D35400;
+        }
+
+        #flipBtn:hover {
+            background-color: #D35400;
         }
 
         button:disabled {
@@ -127,6 +137,11 @@
 
         td {
             background-color: #FFF8E7;
+        }
+
+        #scoreTable td:first-child {
+            font-weight: bold;
+            color: #A6192E;
         }
 
         .current-player {
@@ -199,6 +214,15 @@
             font-weight: bold;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
         }
+
+        #button-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 20px;
+            /* Use gap for cleaner spacing */
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -217,8 +241,10 @@
             <div id="dice"></div>
             <p>Rolls Left: <span id="rollsLeft">2</span></p>
             <p id="flipMessage" class="hidden">Click up to 2 dice to flip.</p>
-            <button id="rollBtn" onclick="rollDice()">Roll Dice</button>
-            <button id="flipBtn" onclick="enterFlipMode()" class="hidden">Flip Dice</button>
+            <div id="button-container">
+                <button id="rollBtn" onclick="rollDice()">Roll Dice</button>
+                <button id="flipBtn" onclick="enterFlipMode()" class="hidden">Flip Dice</button>
+            </div>
         </div>
         <div id="right-panel">
             <h3>Scorecard</h3>
