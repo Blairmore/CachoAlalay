@@ -270,6 +270,7 @@
             <table id="scoreTable"></table>
         </div>
     </div>
+    </div>
 
     <div id="results" class="hidden">
         <h1>Game Over!</h1>
@@ -313,17 +314,47 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Add help button next to scorecard title if not exists
             const scorecardHeader = document.querySelector('#right-panel h3');
-            if (scorecardHeader && !document.getElementById('helpBtn')) {
-                const helpBtn = document.createElement('span');
-                helpBtn.id = 'helpBtn';
-                helpBtn.innerHTML = ' ❓';
-                helpBtn.style.cursor = 'pointer';
-                helpBtn.onclick = openRules;
-                scorecardHeader.appendChild(helpBtn);
+            if (scorecardHeader) {
+                // Apply flex styles to header for right alignment
+                scorecardHeader.style.display = 'flex';
+                scorecardHeader.style.justifyContent = 'space-between';
+                scorecardHeader.style.alignItems = 'center';
+
+                // Create container for buttons if it doesn't exist
+                let btnContainer = document.getElementById('headerBtnContainer');
+                if (!btnContainer) {
+                    btnContainer = document.createElement('div');
+                    btnContainer.id = 'headerBtnContainer';
+                    btnContainer.style.display = 'flex';
+                    btnContainer.style.gap = '15px'; // Space between icons
+                    scorecardHeader.appendChild(btnContainer);
+                }
+
+                if (!document.getElementById('helpBtn')) {
+                    const helpBtn = document.createElement('span');
+                    helpBtn.id = 'helpBtn';
+                    helpBtn.innerHTML = '🆘';
+                    helpBtn.title = 'Rules';
+                    helpBtn.style.cursor = 'pointer';
+                    helpBtn.onclick = openRules;
+                    btnContainer.appendChild(helpBtn);
+                }
+
+                if (!document.getElementById('resetBtnHeader')) {
+                    const resetBtn = document.createElement('span');
+                    resetBtn.id = 'resetBtnHeader';
+                    resetBtn.innerHTML = '🔄';
+                    resetBtn.title = 'Reset Game';
+                    resetBtn.style.cursor = 'pointer';
+                    resetBtn.onclick = confirmReset;
+                    btnContainer.appendChild(resetBtn);
+                }
             }
 
-            document.getElementById('game').classList.add('hidden');
-            console.log('DOM loaded, game hidden');
+            if (!loadGame()) {
+                document.getElementById('game').classList.add('hidden');
+                console.log('DOM loaded, game hidden');
+            }
         });
 
         function openRules() {
@@ -359,6 +390,7 @@
                 }
                 playerNames = [];
                 currentNameIndex = 0;
+                saveGame();
                 promptForName();
             } catch (e) {
                 console.error('Error in startGame:', e);
@@ -404,6 +436,7 @@
             playerNames.push(name || `Player ${currentNameIndex + 1}`);
             document.getElementById('modal').classList.add('hidden');
             currentNameIndex++;
+            saveGame();
             promptForName();
         }
 
@@ -415,6 +448,7 @@
         function confirmScore() {
             scores[currentPlayer][pendingCategory] = pendingScore;
             document.getElementById('modal').classList.add('hidden');
+            saveGame();
             nextTurn();
         }
 
@@ -435,6 +469,7 @@
                 }
                 updateUI();
                 updateGameStatus();
+                saveGame();
             } catch (e) {
                 console.error('Error in rollDice:', e);
             }
@@ -448,6 +483,7 @@
                 document.getElementById('flipMessage').textContent = 'Click up to 2 dice to flip, then choose a category.';
                 updateUI();
                 updateGameStatus();
+                saveGame();
             } catch (e) {
                 console.error('Error in enterFlipMode:', e);
             }
@@ -466,6 +502,7 @@
             }
             updateUI();
             updateGameStatus();
+            saveGame();
         }
 
         function updateGameStatus() {
@@ -601,6 +638,7 @@
                     updateUI();
                     updateGameStatus();
                 }
+                saveGame();
             } catch (e) {
                 console.error('Error in nextTurn:', e);
             }
@@ -620,8 +658,86 @@
             }
         }
 
+        function saveGame() {
+            try {
+                const gameState = {
+                    numPlayers, currentPlayer, rollsLeft, dice, kept,
+                    scores, playerNames, gameOver, flipMode, flipped, flipsUsed,
+                    currentNameIndex, pendingCategory, pendingScore
+                };
+                localStorage.setItem('cachoGame', JSON.stringify(gameState));
+                console.log('Game saved');
+            } catch (e) {
+                console.error('Error saving game:', e);
+            }
+        }
+
+        function loadGame() {
+            try {
+                const saved = localStorage.getItem('cachoGame');
+                if (saved) {
+                    const gameState = JSON.parse(saved);
+                    numPlayers = gameState.numPlayers;
+                    currentPlayer = gameState.currentPlayer;
+                    rollsLeft = gameState.rollsLeft;
+                    dice = gameState.dice;
+                    kept = gameState.kept;
+                    scores = gameState.scores;
+                    playerNames = gameState.playerNames;
+                    gameOver = gameState.gameOver;
+                    flipMode = gameState.flipMode;
+                    flipped = gameState.flipped;
+                    flipsUsed = gameState.flipsUsed;
+                    currentNameIndex = gameState.currentNameIndex;
+                    pendingCategory = gameState.pendingCategory;
+                    pendingScore = gameState.pendingScore;
+
+                    // Restore UI based on state
+                    if (playerNames.length === numPlayers && numPlayers > 0) {
+                        showSection('game');
+                        updateUI();
+                        updateGameStatus();
+                        if (flipMode) {
+                            document.getElementById('flipMessage').classList.remove('hidden');
+                            document.getElementById('flipMessage').textContent = 'Click up to 2 dice to flip, then choose a category.';
+                        }
+                    } else if (currentNameIndex < numPlayers) {
+                        promptForName();
+                    } else {
+                        // Should be in setup if not fully started or fully done, but data suggests mid-setup
+                        showSection('setup');
+                    }
+                    console.log('Game loaded');
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error loading game:', e);
+            }
+            return false;
+        }
+
+        function confirmReset() {
+            document.getElementById('modalTitle').textContent = 'Reset Game';
+            document.getElementById('nameInput').classList.add('hidden');
+            document.getElementById('scorePrompt').classList.remove('hidden');
+            document.getElementById('scorePrompt').textContent = 'Are you sure you want to reset the game? All progress will be lost.';
+            document.getElementById('modalConfirm').onclick = executeReset;
+            document.getElementById('modalCancel').onclick = cancelReset;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function executeReset() {
+            document.getElementById('modal').classList.add('hidden');
+            resetGame();
+        }
+
+        function cancelReset() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
         function resetGame() {
             try {
+                localStorage.removeItem('cachoGame');
                 showSection('setup');
                 currentPlayer = 0;
                 rollsLeft = 2;
