@@ -223,6 +223,25 @@
             /* Use gap for cleaner spacing */
             width: 100%;
         }
+
+        @media (orientation: portrait) {
+            #game.visible {
+                flex-direction: column;
+                height: auto;
+            }
+
+            #left-panel {
+                width: 100%;
+                /* border-bottom: 2px dashed #A6192E; Removed per user request */
+                padding-bottom: 20px;
+                box-sizing: border-box;
+            }
+
+            #right-panel {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
     </style>
 </head>
 
